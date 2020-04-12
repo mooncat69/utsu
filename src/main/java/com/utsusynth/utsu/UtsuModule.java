@@ -88,7 +88,6 @@ public class UtsuModule extends AbstractModule {
                 resampler,
                 wavtool,
                 statusBar,
-                /* threadPoolSize= */ 10,
                 resamplerFile,
                 wavtoolFile,
                 runner);

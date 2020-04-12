@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.inject.Inject;
 import com.utsusynth.utsu.common.utils.PitchUtils;
 import com.utsusynth.utsu.files.FileNameMapper;
+import com.utsusynth.utsu.files.ScriptHelper;
 import com.utsusynth.utsu.model.song.Note;
 import com.utsusynth.utsu.model.song.Song;
 import com.utsusynth.utsu.model.voicebank.LyricConfig;
@@ -27,7 +28,7 @@ public class Resampler {
         new File(this.cacheDir).mkdirs();
     }
 
-    File resample(
+    public File resample(
             File resamplerPath,
             Note note,
             double noteLength,
@@ -35,6 +36,53 @@ public class Resampler {
             File outputFile,
             String pitchString,
             Song song) {
+
+        String[] args = getResampleArgs(resamplerPath, note, noteLength, config, pitchString, song);
+
+        return resampleWithCache(args, outputFile);
+    }
+
+    public String getResampleScript(
+        File resamplerPath,
+        Note note,
+        double noteLength,
+        LyricConfig config,
+        File outputFile,
+        String pitchString,
+        Song song) {
+
+        String[] args = getResampleArgs(resamplerPath, note, noteLength, config, pitchString, song);
+        return getResampleScriptFromArgs(args);
+    }
+
+    public File getResampleCacheFile(
+        File resamplerPath,
+        Note note,
+        double noteLength,
+        LyricConfig config,
+        String pitchString,
+        Song song) {
+
+        String[] args = getResampleArgs(resamplerPath, note, noteLength, config, pitchString, song);
+        return new File(getCacheFileName(args));
+    }
+
+    public File resampleSilence(File resamplerPath, File outputFile, double duration) {
+        String[] args = getResampleSilenceArgs(resamplerPath, duration);
+        return resampleWithCache(args, outputFile);
+    }
+
+    public String getResampleSilenceScript(File resamplerPath, File outputFile, double duration) {
+        String[] args = getResampleSilenceArgs(resamplerPath, duration);
+        return getResampleScriptFromArgs(args);
+    }
+    
+    public File getResampleSilenceCacheFile(File resamplerPath, double duration) {
+        String[] args = getResampleSilenceArgs(resamplerPath, duration);
+        return new File(getCacheFileName(args));
+    }
+
+    private String[] getResampleArgs(File resamplerPath, Note note, double noteLength, LyricConfig config, String pitchString, Song song) {
 
         FileNameMapper fileUtils = FileNameMapper.getInstance();
         String inputFilePath = fileUtils.getOSName(config.getPathToFile().getAbsolutePath());
@@ -67,10 +115,11 @@ public class Resampler {
             pitchString
         };
 
-        return resampleWithCache(args, outputFile);
+        return args;
     }
 
-    File resampleSilence(File resamplerPath, File outputFile, double duration) {
+    private String[] getResampleSilenceArgs(File resamplerPath, double duration) {
+
         String desiredLength = Double.toString(duration + 1);
 
         String[] args = {
@@ -88,7 +137,7 @@ public class Resampler {
             "0"
         };
 
-        return resampleWithCache(args, outputFile);
+        return args;
     }
 
     private File resampleWithCache(String[] args, File outputFile) {
@@ -116,7 +165,23 @@ public class Resampler {
         return cacheFile;
     }
 
-    private String getCacheFileName(String[] args) throws UnsupportedEncodingException, NoSuchAlgorithmException {
+    private String getResampleScriptFromArgs(String[] args) {
+
+        String cacheFileName = getCacheFileName(args);
+        File cacheFile = new File(cacheFileName);
+        
+        if (cacheFile.exists()) {
+            // This has already been cached
+            return "";
+        }
+
+        // Output the render to this file name
+        args[2] = cacheFileName;
+
+        return ScriptHelper.getScriptLine(args);
+    }
+
+    private String getCacheFileName(String[] args) {
 
         String cacheString = String.join("::", args);
         String cacheFileName = null;
@@ -128,17 +193,22 @@ public class Resampler {
 
         if (cacheFileName == null || cacheFileName.length() == 0) {
 
-            // Create a hash of the values for good file names
-            byte[] bytesOfMessage = cacheString.getBytes("UTF-8");
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] thedigest = md.digest(bytesOfMessage);
+            try {
+                // Create a hash of the values for good file names
+                byte[] bytesOfMessage = cacheString.getBytes("UTF-8");
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                byte[] thedigest = md.digest(bytesOfMessage);
 
-            StringBuilder sb = new StringBuilder();
-            for (byte b : thedigest) {
-                sb.append(String.format("%02x", b));
+                StringBuilder sb = new StringBuilder();
+                for (byte b : thedigest) {
+                    sb.append(String.format("%02x", b));
+                }
+
+                cacheFileName = cacheDir + "/note-" + sb.toString() + ".wav";
+
+            } catch (UnsupportedEncodingException | NoSuchAlgorithmException e) {
+                cacheFileName = cacheDir + "/note-" + cacheString.hashCode() + ".wav";                
             }
-
-            cacheFileName = cacheDir + "/note-" + sb.toString() + ".wav";
 
             if (!cacheMap.contains(cacheString)) {
                 cacheMap.put(cacheString, cacheFileName);

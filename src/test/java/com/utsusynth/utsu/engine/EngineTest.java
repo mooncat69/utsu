@@ -116,7 +116,6 @@ public class EngineTest {
                 resampler,
                 wavtool,
                 /* statusBar= */ null,
-                /* threadPoolSize= */ 10,
                 resamplerFile,
                 wavtoolFile,
                 runner);

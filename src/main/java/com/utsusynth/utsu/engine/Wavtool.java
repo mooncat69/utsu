@@ -3,6 +3,7 @@ package com.utsusynth.utsu.engine;
 import java.io.File;
 import com.google.inject.Inject;
 import com.utsusynth.utsu.model.song.Song;
+import com.utsusynth.utsu.files.ScriptHelper;
 import com.utsusynth.utsu.model.song.Note;
 import com.utsusynth.utsu.model.voicebank.LyricConfig;
 
@@ -43,8 +44,7 @@ public class Wavtool {
             boolean triggerSynthesis) {
 
         String[] args = getNewNoteArgs(wavtoolPath, song, note, noteLength, config, inputFile, outputFile, includeOverlap, triggerSynthesis);
-
-        return "\"" + String.join("\" \"", args) + "\"";
+        return ScriptHelper.getScriptLine(args);
     }
 
     void addSilence(
@@ -67,8 +67,7 @@ public class Wavtool {
             boolean triggerSynthesis) {
 
         String[] args = getSilenceArgs(wavtoolPath, duration, inputFile, outputFile, triggerSynthesis);
-
-        return "\"" + String.join("\" \"", args) + "\"";
+        return ScriptHelper.getScriptLine(args);
     }
 
     private String[] getNewNoteArgs(
