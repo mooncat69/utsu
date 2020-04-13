@@ -3,13 +3,14 @@ package com.utsusynth.utsu.engine;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.*;
 
 import com.utsusynth.utsu.common.RegionBounds;
 import com.utsusynth.utsu.common.data.NoteData;
+import com.utsusynth.utsu.files.TestConstants;
 import com.utsusynth.utsu.files.VoicebankFileManager;
 import com.utsusynth.utsu.files.VoicebankReader;
 import com.utsusynth.utsu.model.song.NoteList;
@@ -36,7 +37,7 @@ public class EngineTest {
 
     @Test
     public void testExtraEngineCreation() {
-        File voiceDir = new File("src/test/resources/voice");
+        File voiceDir = new File(TestConstants.TEST_ASSETS_PATH + "voice");
         if (!voiceDir.exists()) return;
 
         ArrayList<File> voicebankDirs = new VoicebankFileManager().getVoiceBankDirs(voiceDir);
@@ -130,9 +131,10 @@ public class EngineTest {
 
     private File createOutputFile(int index) {
 
-        File output = new File("src/test/resources/engine-test-" + index + ".wav");
-        File dir = output.getParentFile();
+        File output = new File(TestConstants.TEST_ASSETS_PATH + "engine-test-" + index + ".wav");
         output.deleteOnExit();
+
+        File dir = output.getParentFile();
         
         if (!dir.exists()) {
             // Make sure this folder exists first!

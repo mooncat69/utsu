@@ -26,7 +26,7 @@ public class VoicebankReaderTest {
 
     @Test
     public void testExtraVoiceBanks() {
-        File voiceDir = new File("src/test/resources/voice");
+        File voiceDir = new File(TestConstants.TEST_ASSETS_PATH + "voice");
         if (!voiceDir.exists()) return;
 
         ArrayList<File> voicebankDirs = new VoicebankFileManager().getVoiceBankDirs(voiceDir);
