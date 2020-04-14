@@ -335,7 +335,7 @@ public class LyricConfigEditor {
         }
 
         // Populate frequency chart data.
-        populateFrqValues(frqSamples, pathToWav, wavData);
+        populateFrqValues(frqSamples, pathToWav, config.getPathToFrqFile(), wavData);
 
         return wavData.isPresent() ? wavData.get().getLengthMs() : 0.0;
     }
@@ -343,6 +343,7 @@ public class LyricConfigEditor {
     private void populateFrqValues(
             ObservableList<Data<Number, Number>> frqSamples,
             File wavFile,
+            File frqFile,
             Optional<WavData> wavData) {
         if (!wavData.isPresent()) {
             return;
@@ -350,7 +351,6 @@ public class LyricConfigEditor {
         double msPerSample = wavData.get().getLengthMs() / wavData.get().getSamples().length;
 
         // Populate frequency chart data.
-        File frqFile = LyricConfig.getFrqFile(wavFile);
         Optional<FrequencyData> frqData = soundFileReader.loadFrqData(frqFile);
 
         // Don't bother populating frq data if there is no wav data.

@@ -2,6 +2,8 @@ package com.utsusynth.utsu.files;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.utsusynth.utsu.engine.ExternalProcessRunner;
+
 public class FileNameMapper {
 
     private static FileNameMapper _this = new FileNameMapper();
@@ -28,18 +30,8 @@ public class FileNameMapper {
 
         // Windows filenames are not reliable when calling external executables
         try {
-            Process process = Runtime.getRuntime().exec("cmd /c for %I in (\"" + path + "\") do @echo %~fsI");
-
-            process.waitFor();
-
-            byte[] data = new byte[65536];
-            int size = process.getInputStream().read(data);
-
-            if (size <= 0) {
-                return path;
-            }
-
-            String dosPath = new String(data, 0, size).replaceAll("\\r\\n", "");
+            String output = new ExternalProcessRunner().getProcessOutput("cmd /c for %I in (\"" + path + "\") do @echo %~fsI");
+            String dosPath = output.replaceAll("\\r\\n", "");
 
             if (!_fileMap.containsKey(path)) {
                 try {

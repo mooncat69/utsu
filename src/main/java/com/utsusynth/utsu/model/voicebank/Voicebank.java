@@ -262,9 +262,10 @@ public class Voicebank {
 
     public boolean addLyricData(LyricConfigData data) {
         LyricConfig newConfig = new LyricConfig(
-                pathToVoicebank,
-                data.getLyric(),
                 data.getFileName(),
+                data.getPathToFile(),
+                data.getPathToFrqFile(),
+                data.getLyric(),
                 data.getConfigValues());
         return lyricConfigs.addConfig(newConfig);
     }
@@ -275,9 +276,10 @@ public class Voicebank {
 
     public void modifyLyricData(LyricConfigData data) {
         LyricConfig newConfig = new LyricConfig(
-                pathToVoicebank,
-                data.getLyric(),
                 data.getFileName(),
+                data.getPathToFile(),
+                data.getPathToFrqFile(),
+                data.getLyric(),
                 data.getConfigValues());
         lyricConfigs.setConfig(newConfig);
     }
@@ -303,8 +305,7 @@ public class Voicebank {
         pitchMap.put(data.getPitch(), data.getSuffix());
     }
 
-    private boolean generateFrq(File wavFile) {
-        File frqFile = LyricConfig.getFrqFile(wavFile);
+    private boolean generateFrq(File wavFile, File frqFile) {
         frqGenerator.genFrqFile(wavFile, frqFile);
         if (frqFile.canRead()) {
             soundFiles.remove(frqFile); // Removes existing frq file, if present.
@@ -324,7 +325,7 @@ public class Voicebank {
                 continue;
             }
             data.setFrqStatus(FrqStatus.LOADING);
-            if (generateFrq(data.getPathToFile())) {
+            if (generateFrq(data.getPathToFile(), data.getPathToFrqFile())) {
                 data.setFrqStatus(FrqStatus.VALID);
             } else {
                 data.setFrqStatus(FrqStatus.INVALID);
@@ -332,10 +333,9 @@ public class Voicebank {
         }
     }
 
-    public void createFrq(File wavFile) {
-        File frqFile = LyricConfig.getFrqFile(wavFile);
+    public void createFrq(File wavFile, File frqFile) {
         if (!frqFile.exists()) {
-            generateFrq(wavFile);
+            generateFrq(wavFile, frqFile);
         }
     }
 

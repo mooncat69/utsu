@@ -9,7 +9,8 @@ import com.utsusynth.utsu.common.data.LyricConfigData.FrqStatus;
  * oto.ini or oto_ini.txt file.
  */
 public class LyricConfig implements Comparable<LyricConfig> {
-    private final File pathToFile; // example: /Library/Iona.utau/C3/de.wav
+    private File pathToFile = null; // example: /Library/Iona.utau/C3/de.wav
+    private File pathToFrqFile = null; // example: /Library/Iona.utau/C3/de_wav.frq
     private final String fileName; // example: C3/de.wav
     private final String trueLyric; // example: de
     private double offset; // Time in wav file before note starts, in ms.
@@ -18,19 +19,20 @@ public class LyricConfig implements Comparable<LyricConfig> {
     private double preutterance; // Number of ms that go before note officially starts.
     private double overlap; // Number of ms that overlap with previous note.
 
+    private static final String FRQ_FILE_SUFFIX = "_wav.frq";
+
     /** Used when reading from file. */
     public LyricConfig(
-            File pathToVoicebank,
+            String filename,
             File pathToFile,
+            File pathToFrqFile,
             String trueLyric,
             String[] configValues) {
         this(
-                pathToVoicebank,
+                filename,
+                pathToFile,
+                pathToFrqFile,
                 trueLyric,
-                pathToFile.toPath().toAbsolutePath().subpath(
-                        // Get part of pathToFile not in pathToVoicebank.
-                        pathToVoicebank.toPath().toAbsolutePath().getNameCount(),
-                        pathToFile.toPath().toAbsolutePath().getNameCount()).toString(),
                 Double.parseDouble(configValues[0]),
                 Double.parseDouble(configValues[1]),
                 Double.parseDouble(configValues[2]),
@@ -40,13 +42,15 @@ public class LyricConfig implements Comparable<LyricConfig> {
 
     /** Used when converting LyricConfigData into a LyricConfig. */
     public LyricConfig(
-            File pathToVoicebank,
+        String fileName,
+            File pathToFile,
+            File pathToFrqFile,
             String trueLyric,
-            String fileName,
             double... configValues) {
         assert (configValues.length == 5);
-        this.pathToFile = pathToVoicebank.toPath().resolve(fileName).toFile();
         this.fileName = fileName;
+        this.pathToFile = pathToFile;
+        this.pathToFrqFile = pathToFrqFile;
         this.trueLyric = trueLyric;
         this.offset = configValues[0];
         this.consonant = configValues[1];
@@ -79,18 +83,21 @@ public class LyricConfig implements Comparable<LyricConfig> {
         return pathToFile;
     }
 
-    public static File getFrqFile(File parent, String wavName) {
-        File wavFile = getWavFile(parent, wavName);
-        return getFrqFile(wavFile);
+    public File getPathToFrqFile() {
+        return pathToFrqFile;
     }
 
-    public static File getFrqFile(File wavFile) {
+    public static File getDefaultFrqFile(File wavFile) {
         String wavName = wavFile.getName();
         String frqName = wavName.substring(0, wavName.length() - 4) + "_wav.frq";
         return wavFile.getParentFile().toPath().resolve(frqName).toFile();
     }
 
-    public static File getWavFile(File parent, String wavName) {
+    public static String getDefaultFrqFileName(String wavName) {
+        return wavName.substring(0, wavName.length() - 4) + FRQ_FILE_SUFFIX;
+    }
+
+    public static File getDefaultWavFile(File parent, String wavName) {
         return parent.toPath().resolve(wavName).toFile();
     }
 
@@ -104,9 +111,10 @@ public class LyricConfig implements Comparable<LyricConfig> {
 
     LyricConfigData getData(boolean hasFrq) {
         return new LyricConfigData(
-                pathToFile,
-                trueLyric,
                 fileName,
+                pathToFile,
+                pathToFrqFile,
+                trueLyric,
                 hasFrq ? FrqStatus.VALID.toString() : FrqStatus.INVALID.toString(),
                 offset,
                 consonant,

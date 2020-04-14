@@ -82,8 +82,8 @@ public class VoicebankReaderTest {
                 LyricConfigData lyricData = lyricDataIterator.next();
 
                 // Make sure the voice file mapping is correct
-                File voiceFile = new File(voicePath + "/" + lyricData.getFileName());
-                assertTrue("Missing voice file for " + lyricData.getLyric(), voiceFile.exists());
+                assertTrue("Missing voice file for " + lyricData.getLyric(), lyricData.getPathToFile().exists());
+                assertTrue("Missing frq file for " + lyricData.getLyric(), lyricData.getPathToFrqFile().exists());
 
                 String dataStatus = lyricData.frqStatusProperty().get();
                 assertTrue("LyricConfigData status is " + dataStatus + ": " + lyricData.getLyric(), validFrqStatus.equals(dataStatus));

@@ -2,12 +2,6 @@ package com.utsusynth.utsu.files;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.MalformedInputException;
-import java.nio.charset.UnmappableCharacterException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -15,7 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +19,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.utsusynth.utsu.common.exception.ErrorLogger;
+import com.utsusynth.utsu.engine.ExternalProcessRunner;
 import com.utsusynth.utsu.model.voicebank.CharacterData;
 import com.utsusynth.utsu.model.voicebank.LyricConfig;
 import com.utsusynth.utsu.model.voicebank.Voicebank;
@@ -173,16 +170,24 @@ public class VoicebankReader {
             Voicebank bank) {
 
         String otoData = readConfigFile(pathToOtoFile.resolve(otoFile).toFile());
+        HashMap<String, String> osNames = getOSFileNames(pathToVoicebank.getAbsolutePath());
         ArrayList<String> missingWavFiles = new ArrayList<>();
 
         for (String rawLine : otoData.split("\n")) {
+
             String line = rawLine.trim();
             Matcher matcher = LYRIC_PATTERN.matcher(line);
+
             if (matcher.find()) {
                 String fileName = matcher.group(1); // Assuming this is a .wav file
                 String lyricName = matcher.group(2);
 
-                File lyricFile = LyricConfig.getWavFile(pathToVoicebank, fileName);
+                File lyricFile;
+                if (osNames.containsKey(fileName)) {
+                    lyricFile = new File(osNames.get(fileName));
+                } else {
+                    lyricFile = LyricConfig.getDefaultWavFile(pathToVoicebank, fileName);
+                }
 
                 // Ignore missing wav files and don't make them available
                 if (!lyricFile.exists()) {
@@ -199,16 +204,27 @@ public class VoicebankReader {
                     System.out.println("Received unexpected results while parsing oto.ini");
                     continue;
                 }
+
                 // Search for a frq file.
-                File frqFile = LyricConfig.getFrqFile(lyricFile);
-                if (!frqFile.exists()) {
-                    bank.createFrq(lyricFile);
+                String frqName = LyricConfig.getDefaultFrqFileName(fileName);
+                File frqFile;
+
+                if (osNames.containsKey(frqName)) {
+                    // There may be a variation on the actual file name
+                    frqFile = new File(osNames.get(frqName));
+                } else {
+                    // This is the expected file name
+                    frqFile = LyricConfig.getDefaultFrqFile(lyricFile);
+                    if (!frqFile.exists()) {
+                        bank.createFrq(lyricFile, frqFile);
+                    }    
                 }
 
                 builder.addLyric(
                         new LyricConfig(
-                                pathToVoicebank,
+                                fileName,
                                 lyricFile,
+                                frqFile,
                                 lyricName,
                                 configValues),
                         frqFile.canRead());
@@ -248,16 +264,7 @@ public class VoicebankReader {
             return "";
         }
         try {
-            String charset = "UTF-8";
-            CharsetDecoder utf8Decoder =
-                    Charset.forName("UTF-8").newDecoder().onMalformedInput(CodingErrorAction.REPORT)
-                            .onUnmappableCharacter(CodingErrorAction.REPORT);
-            try {
-                utf8Decoder.decode(ByteBuffer.wrap(FileUtils.readFileToByteArray(file)));
-            } catch (MalformedInputException | UnmappableCharacterException e) {
-                charset = "SJIS";
-            }
-            return FileUtils.readFileToString(file, charset);
+            return FileHelper.readByteArray(FileUtils.readFileToByteArray(file));
         } catch (IOException e) {
             // TODO Handle this.
             errorLogger.logError(e);
@@ -274,5 +281,39 @@ public class VoicebankReader {
         pathString = pathString.replaceFirst("\\$\\{DEFAULT\\}", defaultVoicePath.getAbsolutePath())
                 .replaceFirst("\\$\\{HOME\\}", System.getProperty("user.home"));
         return new File(pathString);
+    }
+
+    private HashMap<String, String> getOSFileNames(String path) {
+
+        // TODO: Fix this for other OSs
+        if (System.getProperty("os.name").toLowerCase().contains("win")) return new HashMap<String, String>();
+
+        File dir = new File(path);
+        HashMap<String, String> fileMap = new HashMap<>();
+        final String lineDelimiter = "!!!!";
+        final String fieldDelimiter = " :: ";
+
+        // Windows filenames are not reliable when calling external executables
+        try {
+            String cmd = "cmd /c for %I in (\"" + dir.getAbsolutePath() + "\\*.*\") do @echo %~nxI" + fieldDelimiter + "%~fsI" + lineDelimiter;
+            String output = new ExternalProcessRunner().getProcessOutput(cmd);
+
+            // All of the lines from the directory scan
+            String[] dirLines = output
+                            .replaceAll("\\r\\n", "")
+                            .split(lineDelimiter);
+
+            // Add the files to the file map
+            Arrays.stream(dirLines)
+                            .filter(l -> !l.isEmpty() && (l.contains(".wav") || l.contains(".frq")))
+                            .map(l -> l.split(fieldDelimiter))
+                            .filter(l -> l.length == 2)
+                            .forEach(l -> fileMap.put(l[0], l[1]));
+            
+        } catch (Exception e) {
+            errorLogger.logError(e);
+        }
+
+        return fileMap;
     }
 }

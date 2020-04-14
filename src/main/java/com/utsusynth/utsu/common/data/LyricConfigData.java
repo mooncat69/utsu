@@ -2,7 +2,9 @@ package com.utsusynth.utsu.common.data;
 
 import java.io.File;
 import java.util.List;
+
 import com.google.common.collect.ImmutableList;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.Property;
@@ -18,6 +20,7 @@ public class LyricConfigData {
     }
 
     private final File pathToFile;
+    private final File pathToFrqFile;
     private final StringProperty lyric;
     private final StringProperty fileName;
     private final StringProperty frqStatus;
@@ -29,9 +32,10 @@ public class LyricConfigData {
     private final BooleanProperty enabled; // Whether this config has a unique lyric.
 
     public LyricConfigData(
-            File pathToFile,
-            String lyric,
             String fileName,
+            File pathToFile,
+            File pathToFrqFile,
+            String lyric,
             String frqStatus,
             double offset,
             double consonant,
@@ -39,6 +43,7 @@ public class LyricConfigData {
             double preutter,
             double overlap) {
         this.pathToFile = pathToFile;
+        this.pathToFrqFile = pathToFrqFile;
         this.lyric = new SimpleStringProperty(lyric);
         this.fileName = new SimpleStringProperty(fileName);
         this.frqStatus = new SimpleStringProperty(frqStatus.toString());
@@ -52,6 +57,10 @@ public class LyricConfigData {
 
     public File getPathToFile() {
         return pathToFile;
+    }
+
+    public File getPathToFrqFile() {
+        return pathToFrqFile;
     }
 
     public String getLyric() {
@@ -126,9 +135,10 @@ public class LyricConfigData {
 
     public LyricConfigData deepCopy() {
         return new LyricConfigData(
-                pathToFile,
-                lyric.get(),
                 fileName.get(),
+                pathToFile,
+                pathToFrqFile,
+                lyric.get(),
                 frqStatus.get(),
                 offset.get(),
                 consonant.get(),
