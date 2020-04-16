@@ -286,7 +286,7 @@ public class VoicebankReader {
     private HashMap<String, String> getOSFileNames(String path) {
 
         // TODO: Fix this for other OSs
-        if (System.getProperty("os.name").toLowerCase().contains("win")) return new HashMap<String, String>();
+        if (!System.getProperty("os.name").toLowerCase().contains("win")) return new HashMap<String, String>();
 
         File dir = new File(path);
         HashMap<String, String> fileMap = new HashMap<>();
