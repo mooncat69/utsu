@@ -69,7 +69,8 @@ public class EngineTest {
         Engine engine = createEngine(runner);
         File output = createOutputFile(1);
 
-        engine.renderWav(song, output);
+        var renderSuccess = engine.renderWav(song, output);
+        assertTrue("Rendering failed", renderSuccess);
 
         long originalLength = output.length();
         assertTrue("Rendered wav file is too short", originalLength > 500 * 1024);
@@ -83,7 +84,9 @@ public class EngineTest {
         song.setRendered(RegionBounds.INVALID);
         
         File output2 = createOutputFile(2); // Won't allow us to overwrite the original file
-        engine.renderWav(song, output2);
+        renderSuccess = engine.renderWav(song, output2);
+        assertTrue("Rendering failed", renderSuccess);
+
         long newLength = output2.length();
 
         // Has the engine produced sensible output?

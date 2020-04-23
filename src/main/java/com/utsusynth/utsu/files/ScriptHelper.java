@@ -20,24 +20,22 @@ public class ScriptHelper {
 
     private static final int minLinesPerScript = 10;
     private final ExternalProcessRunner runner;
-    private final boolean isWindows;
+    private final boolean canExecuteScripts = canExecuteScriptFiles();
+    private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 
     public ScriptHelper(final ExternalProcessRunner runner) {
         this.runner = runner;
-
-        final String os = System.getProperty("os.name").toLowerCase();
-        isWindows = os.contains("win");
     }
 
     public static String getScriptLine(final String[] args) {
         return "\"" + String.join("\" \"", args) + "\"";
     }
 
-    public void RunScriptParallel(final ArrayList<String> scriptLines) throws IOException {
+    public void RunScriptParallel(final ArrayList<String[]> scriptLines) throws IOException {
 
         // Get non-empty lines
-        final List<String> lines = scriptLines.stream()
-                .filter(l -> l.length() > 0)
+        final List<String[]> lines = scriptLines.stream()
+                .filter(l -> l.length > 0) // Cached scripts will have no parameters
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -50,7 +48,7 @@ public class ScriptHelper {
         // Decide how to split the original script lines
         final int scriptLength = lines.size();
         final int maxThreads = scriptLength > minLinesPerScript ? divideFloor(scriptLength, minLinesPerScript) : 1;
-        final int threadPoolSize = optimalThreads > maxThreads ? maxThreads : optimalThreads;
+        final int threadPoolSize = canExecuteScripts && optimalThreads > maxThreads ? maxThreads : optimalThreads;
 
         if (threadPoolSize == 1) {
             // Avoid the overhead
@@ -58,34 +56,50 @@ public class ScriptHelper {
             return;
         }
 
-        final AtomicInteger counter = new AtomicInteger(0);
-        final Collection<List<String>> smallerScriptLines = lines.stream()
-                        .collect(Collectors.groupingBy(it -> counter.getAndIncrement() % threadPoolSize))
-                        .values();
-
         // Set up a thread pool for asynchronous rendering.
         final ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
-        final ArrayList<Callable<Void>> tasks = new ArrayList<>();
+        final ArrayList<Callable<Void>> tasks = new ArrayList<>();        
 
-        smallerScriptLines.forEach(s -> {
-        
-            final String smallerScript = String.join(System.lineSeparator(), s);
+        if (canExecuteScripts) {
 
-            try {
-                final File scriptFile = getTempScriptFile();
-                FileUtils.writeStringToFile(scriptFile, smallerScript, StandardCharsets.UTF_8);
+            final AtomicInteger counter = new AtomicInteger(0);
+            final Collection<List<String>> smallerScriptLines = lines.stream()
+                            .filter(l -> l.length > 0) // Cached scripts will have no parameters
+                            .map(l -> getScriptLine(l))
+                            .filter(l -> !l.isBlank())
+                            .collect(Collectors.groupingBy(it -> counter.getAndIncrement() % threadPoolSize))
+                            .values();
 
+            smallerScriptLines.forEach(s -> {
+            
+                final String smallerScript = String.join(System.lineSeparator(), s);
+
+                try {
+                    final File scriptFile = getTempScriptFile();
+                    FileUtils.writeStringToFile(scriptFile, smallerScript, StandardCharsets.UTF_8);
+
+                    tasks.add(new Callable<Void>() {
+                        @Override
+                        public Void call() throws Exception {
+                            runner.runProcess(scriptFile.getAbsolutePath());
+                            return null;
+                        }
+                    });
+                } catch (final IOException e) {
+                    // What ??
+                }
+            });
+        } else {
+            for (String[] line : lines) {
                 tasks.add(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {
-                        runner.runProcess(scriptFile.getAbsolutePath());
+                        runner.getProcessOutput(line);
                         return null;
                     }
                 });
-            } catch (final IOException e) {
-                // What ??
             }
-        });
+        }
 
         try {
             // Now run these scripts
@@ -105,25 +119,45 @@ public class ScriptHelper {
         return (int)Math.floor((float)val1 / (float)val2);
     }
 
-    public void RunScriptSerial(final ArrayList<String> scriptLines) throws IOException {
+    public void RunScriptSerial(final ArrayList<String[]> scriptLines) throws IOException {
 
-        // convert this to a single string, suitable for running
-        final String script = scriptLines.stream().filter(l -> l.length() > 0).collect(Collectors.joining(System.lineSeparator()));
-        if (script.length() == 0) return;
+        if (canExecuteScripts) {
+            // Take the generated script, write it to the FS, then run it
+            final String script = scriptLines.stream()
+                .filter(l -> l.length > 0) // Cached scripts will have no parameters
+                .map(l -> getScriptLine(l))
+                .filter(l -> !l.isBlank())
+                .collect(Collectors.joining(System.lineSeparator()));
 
-        // Take the generated script, write it to the FS, then run it
-        final File scriptFile = getTempScriptFile();
-        FileUtils.writeStringToFile(scriptFile, script, StandardCharsets.UTF_8);
-        runner.runProcess(scriptFile.getAbsolutePath());
+            final File scriptFile = getTempScriptFile();
+            FileUtils.writeStringToFile(scriptFile, script, StandardCharsets.UTF_8);
+            runner.runProcess(scriptFile.getAbsolutePath());
+        } else {
+            for (String[] args: scriptLines) {
+                if (args.length == 0) continue;
+                runner.getProcessOutput(args);
+            }
+        }
     }
 
-    private File getTempScriptFile() throws IOException {
+    private static File getTempScriptFile() throws IOException {
 
         // Create a file to hold our wavtool script
         final String scriptExtension = isWindows ? ".cmd" : ".sh";
-        final File scriptFile = File.createTempFile("utsu-", scriptExtension);
+        final File scriptFile = FileHelper.createTempFile("utsu-", scriptExtension);
         scriptFile.deleteOnExit();
 
         return scriptFile;
+    }
+
+    private static boolean canExecuteScriptFiles() {
+        try {
+            // See if we can write temporary executable scripts to the OS
+            final File testScript = getTempScriptFile();
+            FileUtils.writeStringToFile(testScript, "echo Hello", StandardCharsets.UTF_8);
+            return testScript.canExecute();
+        } catch (Exception f) {
+            return false;
+        }
     }
 }

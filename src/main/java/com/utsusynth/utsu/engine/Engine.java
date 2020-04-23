@@ -15,6 +15,7 @@ import com.utsusynth.utsu.common.StatusBar;
 import com.utsusynth.utsu.common.exception.ErrorLogger;
 import com.utsusynth.utsu.common.quantize.Quantizer;
 import com.utsusynth.utsu.common.utils.PitchUtils;
+import com.utsusynth.utsu.files.FileHelper;
 import com.utsusynth.utsu.files.ScriptHelper;
 import com.utsusynth.utsu.model.song.Note;
 import com.utsusynth.utsu.model.song.NoteIterator;
@@ -97,10 +98,7 @@ public class Engine {
      * @return Whether or not there is any sound to export.
      */
     public boolean renderWav(Song song, File finalDestination) {
-        Optional<File> finalSong = render(song, RegionBounds.WHOLE_SONG);
-        if (finalSong.isPresent()) {
-            finalSong.get().renameTo(finalDestination);
-        }
+        Optional<File> finalSong = render(song, RegionBounds.WHOLE_SONG, finalDestination);
         return finalSong.isPresent();
     }
 
@@ -178,6 +176,10 @@ public class Engine {
     }
 
     private Optional<File> render(Song song, RegionBounds bounds) {
+        return render(song, bounds, null);
+    }
+
+    private Optional<File> render(Song song, RegionBounds bounds, File finalDestination) {
         if (lastRenderedFile != null && lastRenderedFile.exists() && bounds.equals(song.getLastRenderedRegion())) {
             // Return old final song if it has not been invalidated.
             return Optional.of(lastRenderedFile);
@@ -194,20 +196,23 @@ public class Engine {
         
         int totalDelta = notes.getCurDelta(); // Absolute position of current note.
         Voicebank voicebank = song.getVoicebank();
-        boolean isFirstNote = true;        
-        File finalSong; // Is the final keyword causing file locking??
+        boolean isFirstNote = true;
+        File finalSong;
 
-        try {
-            // The final rendering goes to this file
-            finalSong = File.createTempFile("utsu-", ".wav");
-            finalSong.deleteOnExit(); // Required??
-        } catch (IOException ioe) {
-            return Optional.absent();
+        if (finalDestination != null) {
+            finalSong = finalDestination;
+        } else {
+            try {
+                // The final rendering goes to this file
+                finalSong = FileHelper.createTempFile("utsu-", ".wav");
+            } catch (IOException ioe) {
+                return Optional.absent();
+            }
         }
 
         // Holds all of the script lines for resampler and wavtool
-        ArrayList<String> wavtoolScriptLines = new ArrayList<>();
-        ArrayList<String> resamplerScriptLines = new ArrayList<>();
+        ArrayList<String[]> wavtoolScriptLines = new ArrayList<>();
+        ArrayList<String[]> resamplerScriptLines = new ArrayList<>();
 
         while (notes.hasNext()) {
             Note note = notes.next();
@@ -291,7 +296,7 @@ public class Engine {
                     pitchString,
                     song);
 
-            String resampleScriptLine = resampler.getResampleScript(
+            String[] resampleScriptLine = resampler.getResampleArgsNotCached(
                     resamplerPath,
                     note,
                     adjustedLength,
@@ -300,7 +305,7 @@ public class Engine {
                     pitchString,
                     song);
 
-            String wavScript = wavtool.getNewNoteScript(
+            String[] wavScript = wavtool.getNewNoteArgs(
                     wavtoolPath,
                     song,
                     note,
@@ -356,8 +361,8 @@ public class Engine {
             Song song,
             File renderedNote,
             File finalSong,
-            ArrayList<String> resamplerScriptLines,
-            ArrayList<String> wavtoolScriptLines) {
+            ArrayList<String[]> resamplerScriptLines,
+            ArrayList<String[]> wavtoolScriptLines) {
 
         double trueDuration = duration * (125.0 / song.getTempo());
 
@@ -369,8 +374,8 @@ public class Engine {
             Song song,
             File renderedNote,
             File finalSong,
-            ArrayList<String> resamplerScriptLines,
-            ArrayList<String> wavtoolScriptLines) {
+            ArrayList<String[]> resamplerScriptLines,
+            ArrayList<String[]> wavtoolScriptLines) {
  
         // The final note must be passed to the wavtool.
         double trueDuration = Math.max(duration, 0) * (125.0 / song.getTempo());
@@ -384,8 +389,8 @@ public class Engine {
             Song song,
             File renderedNote,
             File finalSong,
-            ArrayList<String> resamplerScriptLines,
-            ArrayList<String> wavtoolScriptLines) {
+            ArrayList<String[]> resamplerScriptLines,
+            ArrayList<String[]> wavtoolScriptLines) {
 
         if (trueDuration <= 0.0) {
             // Is this right for Final silence??
@@ -393,8 +398,8 @@ public class Engine {
         }
         
         File resampleCacheFile = resampler.getResampleSilenceCacheFile(resamplerPath, trueDuration);
-        String resampleScriptLine = resampler.getResampleSilenceScript(resamplerPath, resampleCacheFile, trueDuration);
-        String wavtoolScriptLine = wavtool.getSilenceScript(wavtoolPath, trueDuration, resampleCacheFile, finalSong, isFinal);
+        String[] resampleScriptLine = resampler.getResampleSilenceArgsNotCached(resamplerPath, resampleCacheFile, trueDuration);
+        String[] wavtoolScriptLine = wavtool.getSilenceArgs(wavtoolPath, trueDuration, resampleCacheFile, finalSong, isFinal);
 
         resamplerScriptLines.add(resampleScriptLine);
         wavtoolScriptLines.add(wavtoolScriptLine);

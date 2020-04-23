@@ -32,21 +32,6 @@ public class Wavtool {
         runner.runProcess(args);
     }
 
-    String getNewNoteScript(
-            File wavtoolPath,
-            Song song,
-            Note note,
-            double noteLength,
-            LyricConfig config,
-            File inputFile,
-            File outputFile,
-            boolean includeOverlap,
-            boolean triggerSynthesis) {
-
-        String[] args = getNewNoteArgs(wavtoolPath, song, note, noteLength, config, inputFile, outputFile, includeOverlap, triggerSynthesis);
-        return ScriptHelper.getScriptLine(args);
-    }
-
     void addSilence(
             File wavtoolPath,
             double duration,
@@ -59,18 +44,7 @@ public class Wavtool {
         runner.runProcess(args);
     }
 
-    String getSilenceScript(
-            File wavtoolPath,
-            double duration,
-            File inputFile,
-            File outputFile,
-            boolean triggerSynthesis) {
-
-        String[] args = getSilenceArgs(wavtoolPath, duration, inputFile, outputFile, triggerSynthesis);
-        return ScriptHelper.getScriptLine(args);
-    }
-
-    private String[] getNewNoteArgs(
+    public String[] getNewNoteArgs(
             File wavtoolPath,
             Song song,
             Note note,
@@ -118,7 +92,7 @@ public class Wavtool {
         return args;
     }
 
-    private String[] getSilenceArgs(
+    public String[] getSilenceArgs(
         File wavtoolPath,
         double duration,
         File inputFile,

@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.inject.Inject;
 import com.utsusynth.utsu.common.utils.PitchUtils;
+import com.utsusynth.utsu.files.FileHelper;
 import com.utsusynth.utsu.files.FileNameMapper;
 import com.utsusynth.utsu.files.ScriptHelper;
 import com.utsusynth.utsu.model.song.Note;
@@ -19,13 +20,12 @@ public class Resampler {
 
     private ConcurrentHashMap<String, String> cacheMap = new ConcurrentHashMap<>();
     private final ExternalProcessRunner runner;
-    private String cacheDir;
+    private final String cacheDir;
 
     @Inject
     Resampler(ExternalProcessRunner runner) {
         this.runner = runner;
-        this.cacheDir = "cache";
-        new File(this.cacheDir).mkdirs();
+        this.cacheDir = FileHelper.getUtsuCacheDirectory();
     }
 
     public File resample(
@@ -42,7 +42,7 @@ public class Resampler {
         return resampleWithCache(args, outputFile);
     }
 
-    public String getResampleScript(
+    public String[] getResampleArgsNotCached(
         File resamplerPath,
         Note note,
         double noteLength,
@@ -52,7 +52,7 @@ public class Resampler {
         Song song) {
 
         String[] args = getResampleArgs(resamplerPath, note, noteLength, config, pitchString, song);
-        return getResampleScriptFromArgs(args);
+        return getResampleArgsNotCached(args, outputFile);
     }
 
     public File getResampleCacheFile(
@@ -72,9 +72,9 @@ public class Resampler {
         return resampleWithCache(args, outputFile);
     }
 
-    public String getResampleSilenceScript(File resamplerPath, File outputFile, double duration) {
+    public String[] getResampleSilenceArgsNotCached(File resamplerPath, File outputFile, double duration) {
         String[] args = getResampleSilenceArgs(resamplerPath, duration);
-        return getResampleScriptFromArgs(args);
+        return getResampleArgsNotCached(args, outputFile);
     }
     
     public File getResampleSilenceCacheFile(File resamplerPath, double duration) {
@@ -165,6 +165,27 @@ public class Resampler {
         return cacheFile;
     }
 
+    private String[] getResampleArgsNotCached(String[] args, File outputFile) {
+
+        try {
+            String cacheFileName = getCacheFileName(args);
+            File cacheFile = new File(cacheFileName);
+            
+            if (cacheFile.exists()) {
+                // This has already been cached
+                return new String[0];
+            }
+
+            // Output the render to this file name
+            args[2] = cacheFileName;
+
+        } catch (Exception e) {
+            // Do what??
+        }
+
+        return args;
+    }
+
     private String getResampleScriptFromArgs(String[] args) {
 
         String cacheFileName = getCacheFileName(args);
@@ -204,10 +225,10 @@ public class Resampler {
                     sb.append(String.format("%02x", b));
                 }
 
-                cacheFileName = cacheDir + "/note-" + sb.toString() + ".wav";
+                cacheFileName = cacheDir + "note-" + sb.toString() + ".wav";
 
             } catch (UnsupportedEncodingException | NoSuchAlgorithmException e) {
-                cacheFileName = cacheDir + "/note-" + cacheString.hashCode() + ".wav";                
+                cacheFileName = cacheDir + "note-" + cacheString.hashCode() + ".wav";                
             }
 
             if (!cacheMap.contains(cacheString)) {

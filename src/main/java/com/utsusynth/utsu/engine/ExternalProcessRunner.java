@@ -83,6 +83,42 @@ public class ExternalProcessRunner {
         }
     }
     
+    public String getProcessOutput(final String[] args) {
+
+        try {
+            // Kick off the process
+            final Process curProcess = Runtime.getRuntime().exec(args);
+
+            // Kick off a thread to handle errors
+            new Thread() {
+                public void run() {
+                    BufferedReader errorReader = new BufferedReader(new InputStreamReader(curProcess.getErrorStream()));
+                    String line = null;
+                    try {
+                        while ((line = errorReader.readLine()) != null) {
+                            System.out.println(line);
+                        }
+                    } catch (IOException e) {
+                        errorLogger.logError(e);
+                    }
+                }
+            }.start();
+
+            // Block until all data has been read
+            byte[] data = IOUtils.toByteArray(curProcess.getInputStream());
+
+            // Should already be finished by now
+            curProcess.waitFor();
+
+            // Turn this into a sensible string
+            return FileHelper.readByteArray(data);
+
+        } catch (IOException | InterruptedException e) {
+            errorLogger.logError(e);
+            return null;
+        }
+    }
+
     private void watch(final InputStream inputStream) {
         new Thread() {
             public void run() {

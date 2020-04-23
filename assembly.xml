@@ -9,18 +9,10 @@
     <fileSets>
         <!-- The main app. -->
         <fileSet>
-            <directory>${project.build.directory}/jfx/app/</directory>
+            <directory>${project.build.directory}</directory>
             <outputDirectory>/utsu/</outputDirectory>
             <includes>
-                <include>*.jar</include>
-            </includes>
-        </fileSet>
-        <!-- Jar Dependencies. -->
-        <fileSet>
-            <directory>${project.build.directory}/jfx/app/lib/</directory>
-            <outputDirectory>/utsu/lib/</outputDirectory>
-            <includes>
-                <include>*.jar</include>
+                <include>${project.artifactId}-${project.version}-jfx.jar</include>
             </includes>
         </fileSet>
         <!-- The Windows Executable. -->

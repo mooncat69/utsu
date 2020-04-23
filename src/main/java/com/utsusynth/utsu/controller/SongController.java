@@ -41,6 +41,7 @@ import com.utsusynth.utsu.controller.common.UndoService;
 import com.utsusynth.utsu.engine.Engine;
 import com.utsusynth.utsu.engine.Engine.PlaybackStatus;
 import com.utsusynth.utsu.engine.ExternalProcessRunner;
+import com.utsusynth.utsu.files.FileHelper;
 import com.utsusynth.utsu.files.Ust12Reader;
 import com.utsusynth.utsu.files.Ust12Writer;
 import com.utsusynth.utsu.files.Ust20Reader;
@@ -884,7 +885,7 @@ public class SongController implements EditorController, Localizable {
         if (plugin != null) {
             try {
                 // Plugin input. Only give Shift-JIS UST 1.2 files to plugins for now.
-                File pluginFile = File.createTempFile("plugin", ".ust");
+                File pluginFile = FileHelper.createTempFile("plugin", ".ust");
                 System.out.println("Plugin input: " + pluginFile.getAbsolutePath());
                 pluginFile.deleteOnExit();
                 PrintStream ps = new PrintStream(pluginFile, "SJIS");
