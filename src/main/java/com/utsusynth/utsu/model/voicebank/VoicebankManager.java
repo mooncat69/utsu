@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.google.inject.Inject;
 import com.utsusynth.utsu.common.exception.ErrorLogger;
+import com.utsusynth.utsu.common.prefs.EnginePreferences;
 import com.utsusynth.utsu.files.VoicebankFileManager;
 import com.utsusynth.utsu.files.VoicebankReader;
 
@@ -17,7 +18,6 @@ import com.utsusynth.utsu.files.VoicebankReader;
  */
 public class VoicebankManager {
     private static final ErrorLogger errorLogger = ErrorLogger.getLogger();
-    public static final String DEFAULT_VOICE_PATH = "assets/voice";
 
     private final Map<File, Voicebank> voicebanks;
 
@@ -28,7 +28,7 @@ public class VoicebankManager {
     }
 
     private void loadDefaultBanks(VoicebankReader voicebankReader) {
-        ArrayList<File> dirs = new VoicebankFileManager().getVoiceBankDirs(new File(DEFAULT_VOICE_PATH));
+        ArrayList<File> dirs = new VoicebankFileManager().getVoiceBankDirs(EnginePreferences.getVoiceDirectory());
         dirs.forEach(d -> {
             Voicebank bank = voicebankReader.loadVoicebankFromDirectory(d);
             setVoicebank(normalize(d), bank);

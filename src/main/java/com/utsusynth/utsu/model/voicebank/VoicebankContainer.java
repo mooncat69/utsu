@@ -1,8 +1,11 @@
 package com.utsusynth.utsu.model.voicebank;
 
 import java.io.File;
+import java.io.IOException;
 
 import com.google.inject.Inject;
+import com.utsusynth.utsu.common.exception.ErrorLogger;
+import com.utsusynth.utsu.common.prefs.EnginePreferences;
 import com.utsusynth.utsu.files.VoicebankReader;
 
 /** Manages a single voicebank and its save settings. */
@@ -35,7 +38,19 @@ public class VoicebankContainer {
     }
 
     public void setVoicebank(File newLocation) {
-        location = newLocation;
+        try {
+            var path = newLocation.getName();
+            final String VoiceToken = "%VOICE%";
+            if (!path.startsWith(VoiceToken)) {
+                location = newLocation;
+            } else {
+                var rootVoice = EnginePreferences.getVoiceDirectory().getCanonicalPath();
+                var voicePath = rootVoice + "/" + path.substring(VoiceToken.length());
+                location = new File(voicePath);
+            }
+        } catch (IOException ioe) {
+            ErrorLogger.getLogger().logError(ioe);
+        }
     }
 
     public void removeVoicebank() {

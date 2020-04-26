@@ -36,12 +36,12 @@ public class SongReaderTest {
 
                 var song = reader.loadSong(file);
 
-                if (file.getName() == "test-1.ust") {
+                if (file.getName().endsWith("test-1.ust")) {
                     assertEquals("Incorrect Flags", "F1Y0B0H0", song.getFlags());
                     assertEquals("Incorrect Tempo", 120.0, song.getTempo(), 0.1);
                     assertEquals("Incorrect Project Name", "UTAU 1.2 Test", song.getProjectName());
                     assertEquals("Incorrect Output File", "U12Test.wav", song.getOutputFile().getName());
-                    assertEquals("Incorrect Voice Dir", "%VOICE%uta", song.getVoiceDir().getName());
+                    assertEquals("Incorrect Voice Dir", "uta", song.getVoiceDir().getName());
                     assertEquals("Incorrect Mode 2", true, song.getMode2());
                 } else {
                     assertTrue("Incorrect Tempo", song.getTempo() >= Song.MIN_TEMPO && song.getTempo() <= Song.MAX_TEMPO);
