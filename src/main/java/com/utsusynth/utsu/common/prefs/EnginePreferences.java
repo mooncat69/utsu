@@ -7,7 +7,7 @@ import java.util.prefs.Preferences;
 public class EnginePreferences {
 
     private static final String DEFAULT_VOICE_PATH = "assets/voice";
-    private static final String ENGINE_PREFS_NODE = "EnginePreferences";
+    private static final String ENGINE_PREFS_NODE = "UTSU/Preferences";
     private static final String ENGINE_PREFS_KEY_VOICE_DIR = "VoiceDir";
 
     public static final File getVoiceDirectory() {
