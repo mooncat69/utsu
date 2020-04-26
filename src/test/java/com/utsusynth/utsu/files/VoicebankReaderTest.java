@@ -11,7 +11,7 @@ import java.util.Set;
 import com.utsusynth.utsu.common.data.LyricConfigData;
 import com.utsusynth.utsu.common.data.LyricConfigData.FrqStatus;
 import com.utsusynth.utsu.common.data.PitchMapData;
-import com.utsusynth.utsu.engine.EngineHelper;
+import com.utsusynth.utsu.engine.TestHelper;
 import com.utsusynth.utsu.engine.ExternalProcessRunner;
 import com.utsusynth.utsu.model.voicebank.Voicebank;
 
@@ -21,7 +21,7 @@ public class VoicebankReaderTest {
 
     @Test
     public void testVoiceBank() {
-        testVoiceBank(new File(EngineHelper.DEFAULT_VOICE_PATH));
+        testVoiceBank(new File(TestHelper.DEFAULT_VOICE_PATH));
     }
 
     @Test
@@ -38,7 +38,7 @@ public class VoicebankReaderTest {
         ExternalProcessRunner runner = new ExternalProcessRunner();
 
         // Create a reader
-        VoicebankReader reader = EngineHelper.createVoicebankReader(runner, voicePath);
+        VoicebankReader reader = TestHelper.createVoicebankReader(runner, voicePath);
         assertTrue("VoicebankReader is null", reader != null);
 
         // Load a voice bank

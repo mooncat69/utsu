@@ -1,15 +1,19 @@
 package com.utsusynth.utsu.files;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.regex.Pattern;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.utsusynth.utsu.model.song.Note;
 import com.utsusynth.utsu.model.song.Song;
 
+import org.apache.commons.io.FileUtils;
+
 /**
  * Reads a song from a Unicode UST 1.2 file.
  */
-public class Ust12Reader {
+public class Ust12Reader implements SongReader {
     private static final Pattern HEADER_PATTERN = Pattern.compile("\\[#[A-Z0-9]+\\]");
     private static final Pattern NOTE_PATTERN = Pattern.compile("\\[#[0-9]{4,}\\]");
     private final Provider<Song> songProvider;
@@ -81,7 +85,8 @@ public class Ust12Reader {
         return songBuilder.build();
     }
 
-    public Song loadSong(String fileContents) {
+    public Song loadSong(File path) throws IOException {
+        String fileContents = FileHelper.readTextFile(path);
         Song.Builder songBuilder = songProvider.get().toBuilder();
         String[] lines = fileContents.split("\n");
         int curLine = 0;

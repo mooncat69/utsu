@@ -264,7 +264,7 @@ public class VoicebankReader {
             return "";
         }
         try {
-            return FileHelper.readByteArray(FileUtils.readFileToByteArray(file));
+            return FileHelper.readTextFile(file);
         } catch (IOException e) {
             // TODO Handle this.
             errorLogger.logError(e);

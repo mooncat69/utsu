@@ -31,7 +31,7 @@ public class ScriptHelper {
         return "\"" + String.join("\" \"", args) + "\"";
     }
 
-    public void RunScriptParallel(final ArrayList<String[]> scriptLines) throws IOException {
+    public void runScriptParallel(final ArrayList<String[]> scriptLines) throws IOException {
 
         // Get non-empty lines
         final List<String[]> lines = scriptLines.stream()
@@ -52,7 +52,7 @@ public class ScriptHelper {
 
         if (threadPoolSize == 1) {
             // Avoid the overhead
-            RunScriptSerial(scriptLines);
+            runScriptSerial(scriptLines);
             return;
         }
 
@@ -119,7 +119,7 @@ public class ScriptHelper {
         return (int)Math.floor((float)val1 / (float)val2);
     }
 
-    public void RunScriptSerial(final ArrayList<String[]> scriptLines) throws IOException {
+    public void runScriptSerial(final ArrayList<String[]> scriptLines) throws IOException {
 
         if (canExecuteScripts) {
             // Take the generated script, write it to the FS, then run it

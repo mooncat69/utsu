@@ -48,6 +48,31 @@ public class FileHelper {
         }
     }
 
+    public static String getCharSet(File file) throws IOException {
+        try {
+            var bytes = FileUtils.readFileToByteArray(file);
+            String charset = "UTF-8";
+            CharsetDecoder utf8Decoder =
+                    Charset.forName("UTF-8").newDecoder().onMalformedInput(CodingErrorAction.REPORT)
+                            .onUnmappableCharacter(CodingErrorAction.REPORT);
+            try {
+                // Test for UTF-8
+                utf8Decoder.decode(ByteBuffer.wrap(bytes));
+            } catch (CharacterCodingException e) {
+                charset = "SJIS";
+            }
+            return charset;
+        } catch (UnsupportedEncodingException e) {
+            // TODO Handle this.
+            errorLogger.logError(e);
+            return "";
+        }
+    }
+
+    public static String readTextFile(File file) throws IOException {
+        return readByteArray(FileUtils.readFileToByteArray(file));
+    }
+
     public static String getUtsuDirectory() {
         return utsuUserDir;
     }

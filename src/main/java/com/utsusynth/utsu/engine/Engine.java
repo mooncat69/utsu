@@ -180,7 +180,8 @@ public class Engine {
     }
 
     private Optional<File> render(Song song, RegionBounds bounds, File finalDestination) {
-        if (lastRenderedFile != null && lastRenderedFile.exists() && bounds.equals(song.getLastRenderedRegion())) {
+        if (lastRenderedFile != null && lastRenderedFile.exists() && bounds.equals(song.getLastRenderedRegion())
+                && lastRenderedFile.getAbsolutePath() == finalDestination.getAbsolutePath()){
             // Return old final song if it has not been invalidated.
             return Optional.of(lastRenderedFile);
         }
@@ -335,8 +336,8 @@ public class Engine {
 
         try {
             final ScriptHelper scriptHelper = new ScriptHelper(runner);
-            scriptHelper.RunScriptParallel(resamplerScriptLines);
-            scriptHelper.RunScriptSerial(wavtoolScriptLines);
+            scriptHelper.runScriptParallel(resamplerScriptLines);
+            scriptHelper.runScriptSerial(wavtoolScriptLines);
 
             LocalTime finishTime = LocalTime.now();
             System.out.println("Rendered region in " + ChronoUnit.SECONDS.between(startTime, finishTime) + " seconds");

@@ -32,7 +32,7 @@ public class EngineTest {
 
     @Test
     public void testEngineCreation() {
-        testEngineCreation(new File(EngineHelper.DEFAULT_VOICE_PATH));
+        testEngineCreation(new File(TestHelper.DEFAULT_VOICE_PATH));
     }
 
     @Test
@@ -49,7 +49,7 @@ public class EngineTest {
         ExternalProcessRunner runner = new ExternalProcessRunner();
         Song song = createSong(runner, voicePath);
 
-        VoicebankReader reader = EngineHelper.createVoicebankReader(runner, voicePath);
+        VoicebankReader reader = TestHelper.createVoicebankReader(runner, voicePath);
         Voicebank bank = reader.loadVoicebankFromDirectory(voicePath);
 
         Iterator<LyricConfig> lyricIterator = bank.getLyricConfigs("Main");
@@ -126,7 +126,7 @@ public class EngineTest {
     }
 
     private Song createSong(ExternalProcessRunner runner, File voicePath) {
-        return new Song(EngineHelper.createVoicebankContainer(runner, voicePath),
+        return new Song(TestHelper.createVoicebankContainer(runner, voicePath),
                 new NoteStandardizer(),
                 new NoteList(),
                 new PitchCurve(new PortamentoFactory()));
